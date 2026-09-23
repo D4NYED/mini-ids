@@ -1,3 +1,6 @@
+import uuid
+from datetime import datetime, timezone
+
 from scapy.all import ARP, ICMP, IP, TCP, UDP, sniff
 
 
@@ -6,7 +9,9 @@ INTERFACE = "ens36"
 
 def normalize_packet(packet):
     event = {
+        "event_id": str(uuid.uuid4()),
         "event_type": "network",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "protocol": None,
         "src_ip": None,
         "src_port": None,
@@ -20,7 +25,9 @@ def normalize_packet(packet):
         arp_layer = packet[ARP]
 
         return {
+            "event_id": str(uuid.uuid4()),
             "event_type": "network",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "protocol": "ARP",
             "src_ip": arp_layer.psrc,
             "src_port": None,
@@ -61,20 +68,22 @@ def normalize_packet(packet):
     return event
 
 
-def packet_callback(packet):
+def packet_callback(packet, event_handler):
     event = normalize_packet(packet)
+    event_handler(event)
+
+def print_event(event):
     print(event)
 
-
-def start_capture():
+def start_capture(event_handler):
     print(f"[+] Starting packet capture on {INTERFACE}")
 
     sniff(
         iface=INTERFACE,
-        prn=packet_callback,
+        prn=lambda packet: packet_callback(packet, event_handler),
         store=False,
     )
 
 
 if __name__ == "__main__":
-    start_capture()
+    start_capture(print_event)
