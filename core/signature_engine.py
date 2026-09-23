@@ -15,6 +15,7 @@ class SignatureEngine:
         self.rules_file = Path(rules_file)
         self.signatures = self._load_rules()
         self._events = defaultdict(deque)
+        self._alerted = set()
 
     def _load_rules(self):
         """Load signature definitions from the YAML rules file."""
@@ -90,7 +91,12 @@ class SignatureEngine:
         unique_ports = {port for _, port in events}
 
         if len(unique_ports) < minimum_ports:
+            self._alerted.discard(key)
             return None
+        if key in self._alerted:
+            return None
+
+        self._alerted.add(key)
 
         return {
             "signature_id": signature["id"],

@@ -37,6 +37,7 @@ def test_tcp_syn_scan_detection():
     assert alert["src_ip"] == "192.168.56.128"
     assert alert["dst_ip"] == "192.168.56.129"
     assert alert["evidence"]["unique_destination_ports"] >= 10
+    assert len(alerts) == 1
 
 def test_normal_tcp_traffic_does_not_trigger_syn_scan():
     engine = SignatureEngine()

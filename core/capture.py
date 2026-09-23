@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from scapy.all import ARP, ICMP, IP, TCP, UDP, sniff
+from core.signature_engine import SignatureEngine
 
 
 INTERFACE = "ens36"
@@ -72,12 +73,13 @@ def packet_callback(packet, event_handler):
     event = normalize_packet(packet)
     event_handler(event)
 
+
 def print_event(event):
     print(event)
 
+
 def start_capture(event_handler):
     print(f"[+] Starting packet capture on {INTERFACE}")
-
     sniff(
         iface=INTERFACE,
         prn=lambda packet: packet_callback(packet, event_handler),
@@ -86,4 +88,14 @@ def start_capture(event_handler):
 
 
 if __name__ == "__main__":
-    start_capture(print_event)
+    signature_engine = SignatureEngine()
+
+    def handle_event(event):
+        print_event(event)
+
+        alerts = signature_engine.process_event(event)
+
+        for alert in alerts:
+            print(f"[ALERT] {alert}")
+
+    start_capture(handle_event)
