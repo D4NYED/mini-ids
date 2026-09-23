@@ -1,0 +1,13 @@
+signatures:
+  - id: NET-001
+    name: TCP SYN Scan
+    description: Detects multiple TCP SYN packets from the same source to multiple destination ports on a target.
+    severity: medium
+    enabled: true
+
+    detection:
+      protocol: TCP
+      tcp_flags: S
+      threshold:
+        unique_destination_ports: 10
+        time_window_seconds: 5
