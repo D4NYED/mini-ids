@@ -108,7 +108,7 @@ Provide data for investigation and visualization
 
 ## Current Detection Capabilities
 
-At the current development stage, **Mini-IDS implements the collection and normalization layers**.
+At the current development stage, **Mini-IDS implements network collection, event normalization, and signature-based detection**.
 
 A captured network packet is converted into a structured event containing fields such as:
 
@@ -149,9 +149,40 @@ The collector is responsible for:
 3. Normalizing raw data.
 4. Generating structured security events.
 
-Detection engines will consume these normalized events independently.
+Detection engines consume these normalized events independently.
 
----
+### Implemented Signature Detections
+
+#### NET-001 — TCP SYN Scan
+
+Detects multiple TCP SYN packets from the same source to multiple destination ports on a target.
+
+**Detection criteria:**
+
+* Protocol: TCP
+* TCP flags: SYN
+* Minimum unique destination ports: 10
+* Time window: 5 seconds
+* Severity: Medium
+
+The detection tracks the source and destination IP pair and generates a single alert when the configured threshold is reached.
+
+#### NET-002 — SSH Brute Force
+
+Detects multiple TCP SYN connection attempts from the same source to the same destination on TCP port 22 within a defined time window.
+
+**Detection criteria:**
+
+* Protocol: TCP
+* TCP flags: SYN
+* Destination port: 22
+* Minimum connection attempts: 5
+* Time window: 10 seconds
+* Severity: High
+
+The detection tracks the source and destination IP pair and generates a single alert when the configured threshold is reached.
+
+Both signature detections have been validated with automated tests and controlled traffic in the isolated laboratory environment.
 
 # Lab Environment
 

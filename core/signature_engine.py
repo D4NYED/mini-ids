@@ -1,4 +1,6 @@
 from collections import defaultdict, deque
+from curses import window
+from curses import window
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -16,6 +18,66 @@ class SignatureEngine:
         self.signatures = self._load_rules()
         self._events = defaultdict(deque)
         self._alerted = set()
+
+    def _detect_ssh_brute_force(self, signature, event):
+        if event.get("protocol") != "TCP":
+            return None
+
+        if event.get("tcp_flags") != "S":
+            return None
+
+        if event.get("dst_port") != 22:
+            return None
+
+        src_ip = event.get("src_ip")
+        dst_ip = event.get("dst_ip")
+        timestamp = self._parse_timestamp(event.get("timestamp"))
+
+        if not src_ip or not dst_ip or not timestamp:
+            return None
+
+        key = (src_ip, dst_ip)
+
+        if not hasattr(self, "_ssh_attempts"):
+            self._ssh_attempts = defaultdict(deque)
+
+        if not hasattr(self, "_ssh_alerted"):
+            self._ssh_alerted = set()
+
+        attempts = self._ssh_attempts[key]
+
+        window = signature["detection"]["threshold"]["time_window_seconds"]
+        minimum_attempts = signature["detection"]["threshold"]["connection_attempts"]
+
+        cutoff = timestamp - timedelta(seconds=window)
+
+        attempts.append(timestamp)
+
+        while attempts and attempts[0] < cutoff:
+            attempts.popleft()
+
+        if len(attempts) < minimum_attempts:
+            self._ssh_alerted.discard(key)
+            return None
+
+        if key in self._ssh_alerted:
+            return None
+
+        self._ssh_alerted.add(key)
+
+        return {
+            "signature_id": signature["id"],
+            "signature_name": signature["name"],
+            "severity": signature["severity"],
+            "timestamp": timestamp.isoformat(),
+            "src_ip": src_ip,
+            "dst_ip": dst_ip,
+            "evidence": {
+                "connection_attempts": len(attempts),
+                "destination_port": 22,
+                "time_window_seconds": window,
+            },
+        }
 
     def _load_rules(self):
         """Load signature definitions from the YAML rules file."""
@@ -48,11 +110,16 @@ class SignatureEngine:
             if not signature.get("enabled", True):
                 continue
 
+            alert = None
+
             if signature.get("id") == "NET-001":
                 alert = self._detect_tcp_syn_scan(event, signature)
 
-                if alert:
-                    alerts.append(alert)
+            elif signature.get("id") == "NET-002":
+                alert = self._detect_ssh_brute_force(signature, event)
+
+            if alert:
+                alerts.append(alert)
 
         return alerts
 

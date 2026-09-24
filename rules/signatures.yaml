@@ -11,3 +11,17 @@ signatures:
       threshold:
         unique_destination_ports: 10
         time_window_seconds: 5
+
+  - id: NET-002
+    name: SSH Brute Force
+    description: Detects multiple TCP SYN connection attempts to SSH from the same source to the same destination within a short time window.
+    severity: high
+    enabled: true
+
+    detection:
+      protocol: TCP
+      destination_port: 22
+      tcp_flags: S
+      threshold:
+        connection_attempts: 5
+        time_window_seconds: 10
