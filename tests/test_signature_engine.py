@@ -104,3 +104,50 @@ def test_normal_ssh_connection_does_not_trigger_brute_force():
     alerts = engine.process_event(event)
 
     assert alerts == []
+
+def build_http_event(payload):
+    return {
+        "event_id": str(uuid.uuid4()),
+        "event_type": "network",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "protocol": "HTTP",
+        "src_ip": "192.168.56.128",
+        "src_port": 40000,
+        "dst_ip": "192.168.56.129",
+        "dst_port": 80,
+        "tcp_flags": "PA",
+        "packet_length": 120,
+        "payload": payload,
+    }
+
+
+def test_suspicious_http_payload_detection():
+    engine = SignatureEngine()
+
+    event = build_http_event(
+        "GET /search?q=test; /bin/sh HTTP/1.1"
+    )
+
+    alerts = engine.process_event(event)
+
+    assert len(alerts) == 1
+
+    alert = alerts[0]
+
+    assert alert["signature_id"] == "NET-003"
+    assert alert["signature_name"] == "Suspicious HTTP Payload"
+    assert alert["severity"] == "high"
+    assert alert["src_ip"] == "192.168.56.128"
+    assert alert["dst_ip"] == "192.168.56.129"
+    assert "; /bin/sh" in alert["evidence"]["matched_patterns"]
+
+def test_normal_http_payload_does_not_trigger_detection():
+    engine = SignatureEngine()
+
+    event = build_http_event(
+        "GET /search?q=security HTTP/1.1"
+    )
+
+    alerts = engine.process_event(event)
+
+    assert alerts == []

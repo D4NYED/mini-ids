@@ -25,3 +25,15 @@ signatures:
       threshold:
         connection_attempts: 5
         time_window_seconds: 10
+
+  - id: NET-003
+    name: Suspicious HTTP Payload
+    description: Detects suspicious command injection patterns in HTTP payloads.
+    severity: high
+    enabled: true
+
+    detection:
+      protocol: HTTP
+      payload_patterns:
+        - "; /bin/sh"
+        - "; /bin/bash"

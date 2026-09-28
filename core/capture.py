@@ -20,6 +20,7 @@ def normalize_packet(packet):
         "dst_port": None,
         "tcp_flags": None,
         "packet_length": len(packet),
+        "payload": None,
     }
 
     if packet.haslayer(ARP):
@@ -36,6 +37,7 @@ def normalize_packet(packet):
             "dst_port": None,
             "tcp_flags": None,
             "packet_length": len(packet),
+            "payload": None,
         }
 
     if not packet.haslayer(IP):
@@ -53,6 +55,12 @@ def normalize_packet(packet):
         event["src_port"] = tcp_layer.sport
         event["dst_port"] = tcp_layer.dport
         event["tcp_flags"] = str(tcp_layer.flags)
+        if tcp_layer.dport == 80 and bytes(tcp_layer.payload):
+            event["protocol"] = "HTTP"
+            event["payload"] = bytes(tcp_layer.payload).decode(
+                "utf-8",
+                errors="replace",
+            )
 
     elif packet.haslayer(UDP):
         udp_layer = packet[UDP]

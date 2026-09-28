@@ -184,6 +184,25 @@ The detection tracks the source and destination IP pair and generates a single a
 
 Both signature detections have been validated with automated tests and controlled traffic in the isolated laboratory environment.
 
+#### NET-003 — Suspicious HTTP Payload
+
+Detects suspicious command injection patterns contained in HTTP request payloads.
+
+**Detection criteria:**
+
+* Protocol: HTTP
+* Payload inspection: enabled
+* Suspicious patterns:
+  * `; /bin/sh`
+  * `; /bin/bash`
+* Severity: High
+
+The detection inspects normalized HTTP payloads and generates an alert when a configured suspicious pattern is found.
+
+The current implementation focuses on literal payload pattern matching. URL-encoded or fragmented payloads are not currently decoded or reassembled before inspection.
+
+The detection has been validated with automated tests and controlled HTTP traffic in the isolated laboratory environment.
+
 # Lab Environment
 
 Mini-IDS is developed and tested in an **isolated virtualized security laboratory**.

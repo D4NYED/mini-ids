@@ -118,6 +118,9 @@ class SignatureEngine:
             elif signature.get("id") == "NET-002":
                 alert = self._detect_ssh_brute_force(signature, event)
 
+            elif signature.get("id") == "NET-003":
+                alert = self._detect_suspicious_http_payload(signature, event)
+
             if alert:
                 alerts.append(alert)
 
@@ -175,6 +178,38 @@ class SignatureEngine:
             "evidence": {
                 "unique_destination_ports": len(unique_ports),
                 "time_window_seconds": window,
+            },
+        }
+
+    def _detect_suspicious_http_payload(self, signature, event):
+        if event.get("protocol") != "HTTP":
+            return None
+
+        payload = event.get("payload")
+
+        if not payload:
+            return None
+
+        patterns = signature["detection"].get("payload_patterns", [])
+
+        matched_patterns = [
+            pattern
+            for pattern in patterns
+            if pattern in payload
+        ]
+
+        if not matched_patterns:
+            return None
+
+        return {
+            "signature_id": signature["id"],
+            "signature_name": signature["name"],
+            "severity": signature["severity"],
+            "timestamp": event["timestamp"],
+            "src_ip": event.get("src_ip"),
+            "dst_ip": event.get("dst_ip"),
+            "evidence": {
+                "matched_patterns": matched_patterns,
             },
         }
 
