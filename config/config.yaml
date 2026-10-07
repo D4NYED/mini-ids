@@ -1,0 +1,8 @@
+detection:
+  enabled: true
+
+anomaly:
+  enabled: true
+  window_seconds: 10
+  baseline_samples: 10
+  threshold_multiplier: 3
