@@ -2,6 +2,10 @@ import uuid
 from datetime import datetime, timezone
 
 from scapy.all import ARP, ICMP, IP, TCP, UDP, sniff
+
+from core.config import load_config
+from core.detection_pipeline import DetectionPipeline
+from core.network_volume_detector import NetworkVolumeAnomalyDetector
 from core.signature_engine import SignatureEngine
 
 
@@ -86,6 +90,15 @@ def print_event(event):
     print(event)
 
 
+def handle_event(event, detection_pipeline):
+    print_event(event)
+
+    alerts = detection_pipeline.process_event(event)
+
+    for alert in alerts:
+        print(f"[ALERT] {alert}")
+
+
 def start_capture(event_handler):
     print(f"[+] Starting packet capture on {INTERFACE}")
     sniff(
@@ -96,14 +109,25 @@ def start_capture(event_handler):
 
 
 if __name__ == "__main__":
+    config = load_config()
+    anomaly_config = config["anomaly"]
+
     signature_engine = SignatureEngine()
 
-    def handle_event(event):
-        print_event(event)
+    anomaly_detector = NetworkVolumeAnomalyDetector(
+        window_seconds=anomaly_config["window_seconds"],
+        baseline_samples=anomaly_config["baseline_samples"],
+        threshold_multiplier=anomaly_config["threshold_multiplier"],
+    )
 
-        alerts = signature_engine.process_event(event)
+    detection_pipeline = DetectionPipeline(
+        signature_engine=signature_engine,
+        anomaly_detector=anomaly_detector,
+    )
 
-        for alert in alerts:
-            print(f"[ALERT] {alert}")
-
-    start_capture(handle_event)
+    start_capture(
+        lambda event: handle_event(
+            event,
+            detection_pipeline,
+        )
+    )
