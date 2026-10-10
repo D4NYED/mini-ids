@@ -11,6 +11,8 @@ class NetworkVolumeAnomalyDetector:
         baseline_samples=10,
         threshold_multiplier=3,
     ):
+        self.window_seconds = window_seconds
+
         self.measurement_window = MeasurementWindow(
             window_seconds=window_seconds,
         )
@@ -32,4 +34,22 @@ class NetworkVolumeAnomalyDetector:
             self.anomaly_engine.add_measurement(measurement)
             return None
 
-        return self.anomaly_engine.check_anomaly(measurement)
+        anomaly = self.anomaly_engine.check_anomaly(measurement)
+
+        if anomaly is None:
+            return None
+
+        return {
+            "type": "anomaly",
+            "detector_id": "NET-004",
+            "detector_name": "Network Event Volume Anomaly",
+            "severity": "medium",
+            "timestamp": event["timestamp"],
+            "evidence": {
+                "metric": "network_event_count",
+                "baseline": anomaly["baseline"],
+                "current_value": anomaly["current_value"],
+                "threshold": round(anomaly["threshold"], 2),
+                "window_seconds": self.window_seconds,
+            },
+        }

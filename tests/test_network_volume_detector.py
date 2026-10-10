@@ -46,7 +46,19 @@ def test_network_volume_anomaly_is_detected():
     )
 
     assert alert is not None
+
     assert alert["type"] == "anomaly"
-    assert alert["baseline"] == 2
-    assert alert["current_value"] == 7
-    assert alert["threshold"] == 6
+    assert alert["detector_id"] == "NET-004"
+    assert alert["detector_name"] == "Network Event Volume Anomaly"
+    assert alert["severity"] == "medium"
+    assert alert["timestamp"] == (
+        start + timedelta(seconds=40)
+    ).isoformat()
+
+    evidence = alert["evidence"]
+
+    assert evidence["metric"] == "network_event_count"
+    assert evidence["baseline"] == 2
+    assert evidence["current_value"] == 7
+    assert evidence["threshold"] == 6
+    assert evidence["window_seconds"] == 10
