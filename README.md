@@ -4,7 +4,7 @@ A Python-based hybrid Host and Network Intrusion Detection System designed for s
 
 Mini-IDS is being developed from scratch to demonstrate how a lightweight IDS can collect security telemetry, normalize events, detect suspicious activity, correlate related events, and generate actionable alerts.
 
-> **Project status:** Active development — network collection, event normalization, signature-based detection, and statistical anomaly detection are implemented and validated with controlled laboratory traffic. Alert correlation and security pipeline orchestration are implemented and unit tested; integration with live packet capture is the next development step.
+> **Project status:** Active development — network collection, event normalization, signature-based detection, statistical anomaly detection, alert correlation, and security pipeline orchestration are implemented and validated with controlled laboratory traffic. COR-001 correlation is now integrated into the live packet capture flow.
 
 ---
 
@@ -59,7 +59,6 @@ The system is being developed incrementally, validating each component before in
 
 ### Planned
 
-- Integration of the SecurityPipeline with live packet capture.
 - Host-based telemetry collection.
 - Additional correlation rules.
 - Incident timelines.
@@ -127,7 +126,7 @@ Generate structured detection alerts
 
 At the current development stage, **Mini-IDS implements network collection, event normalization, signature-based detection, statistical anomaly detection, and alert correlation**.
 
-Signature-based and anomaly-based detections are integrated into the live network processing flow through the `DetectionPipeline`. Alert correlation is implemented and unit tested through the `CorrelationEngine`, but has not yet been integrated with live packet capture.
+Signature-based detection, statistical anomaly detection, and alert correlation are integrated into the live network processing flow. The `SecurityPipeline` orchestrates the `DetectionPipeline` and `CorrelationEngine`, allowing correlated incidents such as `COR-001` to be generated during runtime.
 
 A captured network packet is converted into a structured event containing fields such as:
 
@@ -294,7 +293,7 @@ COR-001 — Reconnaissance Followed by SSH Brute Force
 
 The correlation rule has been validated with automated tests covering successful correlation, correlation-window expiration, different source addresses, different destination addresses, and incorrect alert ordering.
 
-The `CorrelationEngine` and `SecurityPipeline` are currently implemented and unit tested. Integration with the live packet capture flow is the next development step.
+The `CorrelationEngine` and `SecurityPipeline` are integrated into the live packet capture flow, unit tested, and validated with controlled laboratory traffic. COR-001 has been successfully generated during runtime from a TCP SYN scan followed by SSH brute-force behavior.
 
 # Lab Environment
 
@@ -428,7 +427,7 @@ The current live detection flow includes:
 - Statistical network volume anomaly detection.
 - Structured detection alerts printed to the terminal.
 
-The `SecurityPipeline` and `CorrelationEngine` are implemented and tested independently, but are not yet connected to the live packet capture flow.
+The `SecurityPipeline` and `CorrelationEngine` are integrated into the live packet capture flow and can generate correlated incidents during runtime.
 
 ---
 
@@ -563,7 +562,7 @@ Document
 Commit
 ```
 
-Not every component has reached every validation stage. For example, the `SecurityPipeline` and `CorrelationEngine` are currently unit tested but have not yet been integrated into the live packet capture flow.
+Not every component has reached every validation stage. The `SecurityPipeline` and `CorrelationEngine` are now unit tested, integrated with the live packet capture flow, and validated with controlled laboratory traffic.
 
 ---
 
@@ -590,7 +589,12 @@ The current live network detection flow is:
 │ Normalization    │
 └────────┬─────────┘
          │
-         │ Structured network events
+         │ Structured network event
+         ▼
+┌──────────────────┐
+│ SecurityPipeline │
+└────────┬─────────┘
+         │
          ▼
 ┌──────────────────┐
 │ DetectionPipeline│
@@ -604,23 +608,23 @@ The current live network detection flow is:
         └───────────────► NetworkVolumeAnomalyDetector
                            └── AnomalyEngine
                                └── NET-004
+        │
+        ▼
+      alerts
+        │
+        ▼
+┌──────────────────┐
+│ CorrelationEngine│
+└────────┬─────────┘
+         │
+         ▼
+      incidents
+         │
+         └── COR-001
+
 ```
 
-The next integration stage extends this flow with security orchestration and correlation:
-
-```text
-DetectionPipeline
-      ↓
-alerts
-      ↓
-SecurityPipeline
-      ↓
-CorrelationEngine
-      ↓
-incidents
-```
-
-The `SecurityPipeline` and `CorrelationEngine` are already implemented and unit tested, but this correlation path has not yet been connected to the live packet capture workflow.
+The `SecurityPipeline` and `CorrelationEngine` are integrated into the live packet capture workflow. Alerts produced by the `DetectionPipeline` can now be correlated into runtime incidents such as `COR-001`.
 
 ---
 
@@ -780,7 +784,7 @@ The project intentionally uses an **isolated virtual network** for offensive tes
 - [x] Correlation time-window validation
 - [x] Source and destination correlation
 - [x] SecurityPipeline orchestration
-- [ ] Integrate SecurityPipeline with live packet capture
+- [x] Integrate SecurityPipeline with live packet capture
 - [ ] Additional correlation rules
 - [ ] Incident timelines
 - [ ] Alert Manager
@@ -853,7 +857,7 @@ The project currently has:
 
 Signature-based detection, statistical anomaly detection, and the live `DetectionPipeline` have been validated with controlled traffic inside the isolated laboratory environment.
 
-The `CorrelationEngine` and `SecurityPipeline` are implemented and unit tested. The next development step is to integrate the `SecurityPipeline` with the live packet capture flow so that detected alerts can be correlated into incidents during runtime.
+The `CorrelationEngine` and `SecurityPipeline` are integrated into the live packet capture flow, unit tested, and validated with controlled laboratory traffic. COR-001 can now be generated during runtime by correlating a TCP SYN scan followed by SSH brute-force behavior from the same source to the same destination within the configured correlation window.
 
 Host-based telemetry collection, Alert Manager integration, structured persistent logging, dashboard visualization, and CI/CD automation remain planned development stages.
 
