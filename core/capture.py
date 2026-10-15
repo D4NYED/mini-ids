@@ -4,8 +4,10 @@ from datetime import datetime, timezone
 from scapy.all import ARP, ICMP, IP, TCP, UDP, sniff
 
 from core.config import load_config
+from core.correlation_engine import CorrelationEngine
 from core.detection_pipeline import DetectionPipeline
 from core.network_volume_detector import NetworkVolumeAnomalyDetector
+from core.security_pipeline import SecurityPipeline
 from core.signature_engine import SignatureEngine
 
 
@@ -90,13 +92,16 @@ def print_event(event):
     print(event)
 
 
-def handle_event(event, detection_pipeline):
+def handle_event(event, security_pipeline):
     print_event(event)
 
-    alerts = detection_pipeline.process_event(event)
+    result = security_pipeline.process_event(event)
 
-    for alert in alerts:
+    for alert in result["alerts"]:
         print(f"[ALERT] {alert}")
+
+    for incident in result["incidents"]:
+        print(f"[INCIDENT] {incident}")
 
 
 def start_capture(event_handler):
@@ -125,9 +130,16 @@ if __name__ == "__main__":
         anomaly_detector=anomaly_detector,
     )
 
+    correlation_engine = CorrelationEngine()
+
+    security_pipeline = SecurityPipeline(
+        detection_pipeline=detection_pipeline,
+        correlation_engine=correlation_engine,
+    )
+
     start_capture(
         lambda event: handle_event(
             event,
-            detection_pipeline,
+            security_pipeline,
         )
     )
