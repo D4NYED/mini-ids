@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from scapy.all import ARP, ICMP, IP, TCP, UDP, sniff
 
+from core.alert_manager import AlertManager
 from core.config import load_config
 from core.correlation_engine import CorrelationEngine
 from core.detection_pipeline import DetectionPipeline
@@ -92,16 +93,12 @@ def print_event(event):
     print(event)
 
 
-def handle_event(event, security_pipeline):
+def handle_event(event, security_pipeline, alert_manager):
     print_event(event)
 
     result = security_pipeline.process_event(event)
 
-    for alert in result["alerts"]:
-        print(f"[ALERT] {alert}")
-
-    for incident in result["incidents"]:
-        print(f"[INCIDENT] {incident}")
+    alert_manager.process_result(result)
 
 
 def start_capture(event_handler):
@@ -137,9 +134,12 @@ if __name__ == "__main__":
         correlation_engine=correlation_engine,
     )
 
+    alert_manager = AlertManager()
+
     start_capture(
         lambda event: handle_event(
             event,
             security_pipeline,
+            alert_manager,
         )
     )

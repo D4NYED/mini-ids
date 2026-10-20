@@ -1,6 +1,8 @@
+from unittest.mock import Mock
+
 from scapy.all import IP, TCP, Raw
 
-from core.capture import normalize_packet
+from core.capture import handle_event, normalize_packet
 
 
 def test_http_payload_normalization():
@@ -20,3 +22,28 @@ def test_http_payload_normalization():
     assert event["src_port"] == 40000
     assert event["dst_port"] == 80
     assert event["payload"] == payload.decode("utf-8")
+
+
+def test_handle_event_forwards_results_to_alert_manager():
+    event = {
+        "event_type": "network",
+    }
+
+    result = {
+        "alerts": [
+            {"signature_id": "NET-001"},
+        ],
+        "incidents": [
+            {"correlation_id": "COR-001"},
+        ],
+    }
+
+    security_pipeline = Mock()
+    security_pipeline.process_event.return_value = result
+
+    alert_manager = Mock()
+
+    handle_event(event, security_pipeline, alert_manager)
+
+    security_pipeline.process_event.assert_called_once_with(event)
+    alert_manager.process_result.assert_called_once_with(result)
