@@ -55,6 +55,7 @@ The system is being developed incrementally, validating each component before in
 - Alert correlation engine.
 - COR-001 correlation: reconnaissance followed by SSH brute force.
 - Security pipeline orchestration for detection and correlation.
+- Centralized console presentation of security alerts and correlated incidents through AlertManager.
 - Automated unit and integration tests with pytest.
 
 ### Planned
@@ -62,7 +63,6 @@ The system is being developed incrementally, validating each component before in
 - Host-based telemetry collection.
 - Additional correlation rules.
 - Incident timelines.
-- Alert Manager.
 - Structured JSON and SQLite logging.
 - SOC-oriented dashboard.
 - Automated security testing and CI/CD.
@@ -357,6 +357,7 @@ mini-ids/
 │   └── signatures.yaml
 ├── tests/
 │   ├── __init__.py
+│   ├── test_alert_manager.py
 │   ├── test_anomaly_engine.py
 │   ├── test_capture.py
 │   ├── test_correlation_engine.py
@@ -509,7 +510,7 @@ Mini-IDS uses automated tests and controlled laboratory traffic to validate dete
 The current test suite contains:
 
 ```text
-23 passing tests
+25 passing tests
 ```
 
 The automated tests currently cover:
@@ -610,21 +611,32 @@ The current live network detection flow is:
                                └── NET-004
         │
         ▼
-      alerts
-        │
-        ▼
-┌──────────────────┐
-│ CorrelationEngine│
-└────────┬─────────┘
-         │
-         ▼
-      incidents
-         │
-         └── COR-001
-
+      alerts ───────────────────────────┐
+        │                               │
+        ▼                               │
+┌──────────────────┐                    │
+│ CorrelationEngine│                    │
+└────────┬─────────┘                    │
+         │                              │
+         ▼                              │
+  incidents (COR-001)                   │
+         │                              │
+         └───────────────┬──────────────┘
+                         │
+                         ▼
+                 ┌────────────────┐
+                 │  AlertManager  │
+                 └───────┬────────┘
+                         │
+                         ▼
+                [ALERT] / [INCIDENT]
 ```
 
-The `SecurityPipeline` and `CorrelationEngine` are integrated into the live packet capture workflow. Alerts produced by the `DetectionPipeline` can now be correlated into runtime incidents such as `COR-001`.
+The `SecurityPipeline` orchestrates signature-based detection, statistical anomaly detection, and alert correlation during live packet capture.
+
+The resulting alerts and correlated incidents are passed to `AlertManager` through `handle_event()`. The `AlertManager` centralizes console output using `[ALERT]` and `[INCIDENT]` labels.
+
+Persistent JSON logging, SQLite storage, and dashboard integration are not yet implemented.
 
 ---
 
@@ -787,7 +799,7 @@ The project intentionally uses an **isolated virtual network** for offensive tes
 - [x] Integrate SecurityPipeline with live packet capture
 - [ ] Additional correlation rules
 - [ ] Incident timelines
-- [ ] Alert Manager
+- [x] Alert Manager
 - [ ] Structured JSON and SQLite logging
 
 ---
@@ -837,6 +849,9 @@ Mini-IDS currently provides a working network-based detection pipeline with:
 - Structured detection alerts.
 - Alert correlation.
 - Security pipeline orchestration.
+- AlertManager console output for security alerts and incidents.
+- Integration between handle_event(), SecurityPipeline, and AlertManager.
+- Centralized console output for security alerts and correlated incidents through AlertManager.
 
 The following detections are currently implemented:
 
@@ -852,14 +867,14 @@ The following correlation rule is currently implemented:
 The project currently has:
 
 ```text
-23 passing automated tests
+25 passing automated tests
 ```
 
 Signature-based detection, statistical anomaly detection, and the live `DetectionPipeline` have been validated with controlled traffic inside the isolated laboratory environment.
 
 The `CorrelationEngine` and `SecurityPipeline` are integrated into the live packet capture flow, unit tested, and validated with controlled laboratory traffic. COR-001 can now be generated during runtime by correlating a TCP SYN scan followed by SSH brute-force behavior from the same source to the same destination within the configured correlation window.
 
-Host-based telemetry collection, Alert Manager integration, structured persistent logging, dashboard visualization, and CI/CD automation remain planned development stages.
+Host-based telemetry collection, structured persistent logging, dashboard visualization, and CI/CD automation remain planned development stages.
 
 ---
 
