@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 from scapy.all import ARP, ICMP, IP, TCP, UDP, sniff
 
@@ -7,6 +8,7 @@ from core.alert_manager import AlertManager
 from core.config import load_config
 from core.correlation_engine import CorrelationEngine
 from core.detection_pipeline import DetectionPipeline
+from core.jsonl_storage import JsonlStorage
 from core.network_volume_detector import NetworkVolumeAnomalyDetector
 from core.security_pipeline import SecurityPipeline
 from core.signature_engine import SignatureEngine
@@ -93,6 +95,21 @@ def print_event(event):
     print(event)
 
 
+def create_alert_manager(config):
+    storage_config = config["storage"]
+    storage = None
+
+    if storage_config["enabled"]:
+        storage_path = (
+            Path(__file__).resolve().parent.parent
+            / storage_config["path"]
+        )
+
+        storage = JsonlStorage(storage_path)
+
+    return AlertManager(storage=storage)
+
+
 def handle_event(event, security_pipeline, alert_manager):
     print_event(event)
 
@@ -134,7 +151,7 @@ if __name__ == "__main__":
         correlation_engine=correlation_engine,
     )
 
-    alert_manager = AlertManager()
+    alert_manager = create_alert_manager(config)
 
     start_capture(
         lambda event: handle_event(

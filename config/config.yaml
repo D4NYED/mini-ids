@@ -6,3 +6,7 @@ anomaly:
   window_seconds: 10
   baseline_samples: 10
   threshold_multiplier: 3
+
+storage:
+  enabled: true
+  path: logs/security_events.jsonl
